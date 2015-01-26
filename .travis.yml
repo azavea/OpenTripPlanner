@@ -7,5 +7,3 @@ script: mvn -B -q clean package # run in quiet batch mode (to not overwhelm the 
 cache:
     directories:
         - $HOME/.m2 # cache all those pesky maven dependencies
-git:
-  depth: 500
