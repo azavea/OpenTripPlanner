@@ -102,7 +102,7 @@
                                     <pluginExecutionFilter>
                                         <groupId>pl.project13.maven</groupId>
                                         <artifactId>git-commit-id-plugin</artifactId>
-                                        <versionRange>[1.0,)</versionRange>
+                                        <versionRange>[2.1.12,)</versionRange>
                                         <goals>
                                             <goal>revision</goal>
                                         </goals>
