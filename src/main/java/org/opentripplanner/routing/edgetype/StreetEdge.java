@@ -189,9 +189,6 @@ public class StreetEdge extends Edge implements Cloneable {
                 outAngle = 0;
             }
         }
-        if (osmId.isEmpty()) {
-            LOG.warn("Creating StreetEdge {} without an OSM ID!", name);
-        }
     }
 
     public boolean canTraverse(RoutingRequest options) {

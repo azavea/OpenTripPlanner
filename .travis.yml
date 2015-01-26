@@ -1,0 +1,11 @@
+sudo: false # use new container-based infrastructure, to enable caching on public repo
+language: java
+jdk: oraclejdk7
+before_script: /bin/true
+install: /bin/true # skip install step (runs gradle assemble by default)
+script: mvn -B -q clean package # run in quiet batch mode (to not overwhelm the Travis log)
+cache:
+    directories:
+        - $HOME/.m2 # cache all those pesky maven dependencies
+git:
+  depth: 500
