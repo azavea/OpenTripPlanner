@@ -33,6 +33,8 @@ import org.opentripplanner.api.parameter.QualifiedModeSetSequence;
 import org.opentripplanner.common.MavenVersion;
 import org.opentripplanner.common.model.GenericLocation;
 import org.opentripplanner.common.model.NamedPlace;
+import org.opentripplanner.common.model.extras.OptionAttribute;
+import org.opentripplanner.common.model.extras.nihOptions.NihOption;
 import org.opentripplanner.routing.graph.Edge;
 import org.opentripplanner.routing.graph.Graph;
 import org.opentripplanner.routing.graph.Vertex;
@@ -402,6 +404,20 @@ public class RoutingRequest implements Cloneable, Serializable {
     public boolean bikeParkAndRide = false;
     public boolean parkAndRide  = false;
     public boolean kissAndRide  = false;
+
+    /* Additional flags for walk routing
+    *   TODO: Abstract to some other request options object since these are currently Azavea specific?
+    */
+    // Assumed manual if false
+    public boolean wheelchairElectric = false;
+    // [0-1], 1 is allow challenging terrain
+    public double steepTerrainModifier = 1;
+    // [0-1], 1 is allow challenging routes
+    public double challengeModifier = 0.1;
+    // [0-1], 1 is request quieter routes
+    public double peaceModifier = 0.1;
+    // [0-1], 1 is request more rest stops
+    public double restModifier = 0.1;
 
     /* Whether we are in "long-distance mode". This is currently a server-wide setting, but it could be made per-request. */
     public boolean longDistance = false;

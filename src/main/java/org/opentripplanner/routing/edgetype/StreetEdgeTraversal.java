@@ -1,5 +1,10 @@
 package org.opentripplanner.routing.edgetype;
 
+import org.opentripplanner.common.model.extras.OptionAttribute;
+import org.opentripplanner.common.model.extras.OptionSet;
+import org.opentripplanner.common.model.extras.nihOptions.NihOption;
+import org.opentripplanner.common.model.extras.nihOptions.fields.CurbRamp;
+import org.opentripplanner.common.model.extras.nihOptions.fields.Surface;
 import org.opentripplanner.routing.core.RoutingRequest;
 import org.opentripplanner.routing.core.State;
 import org.opentripplanner.routing.core.StateEditor;
@@ -114,6 +119,19 @@ public class StreetEdgeTraversal {
                     System.out.format("line length: %.1f m, slope: %.3f ---> slope costs: %.1f , weight: %.1f , time (flat):  %.1f %n", length, elevationProfile.getMaxSlope(), costs, weight, timeflat);
                 }
                 */
+            }
+        }
+
+        // Ban edges if they match NihOptions and we're walking
+        OptionSet extraOptions = edge.getExtraOptionFields();
+        if (extraOptions != null && traverseMode.equals(TraverseMode.WALK)) {
+            OptionAttribute surface = extraOptions.getOption(NihOption.SURFACE);
+            OptionAttribute curbRamp = extraOptions.getOption(NihOption.CURB_RAMP);
+            // If we're in a wheelchair, we need concrete and curb ramps
+            if (options.wheelchairAccessible && (
+                    !surface.equals(Surface.CONCRETE) ||
+                    curbRamp.equals(CurbRamp.NO))) {
+                return null;
             }
         }
 
