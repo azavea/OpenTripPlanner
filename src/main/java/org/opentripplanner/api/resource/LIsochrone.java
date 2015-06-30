@@ -56,7 +56,7 @@ import com.google.common.io.Files;
 import com.vividsolutions.jts.geom.MultiPolygon;
 
 /**
- * Return isochrone geometry as a set of GeoJSON or zipped-shapefile multi-polygons.
+ * Return isochrone geometry as a set of GeoJSON.
  * 
  * Example of request:
  * 
@@ -100,45 +100,6 @@ public class LIsochrone extends RoutingResource {
         cc.setMaxAge(3600);
         cc.setNoCache(false);
         return Response.ok().entity(writer.toString()).cacheControl(cc).build();
-    }
-
-    @GET
-    @Produces("application/x-zip-compressed")
-    public Response getZippedShapefileIsochrone(@QueryParam("shpName") String shpName,
-            @QueryParam("stream") @DefaultValue("true") boolean stream) throws Exception {
-        SimpleFeatureCollection contourFeatures = makeContourFeatures(computeIsochrone());
-        /* Output the staged features to Shapefile */
-        final File shapeDir = Files.createTempDir();
-        File shapeFile = new File(shapeDir, shpName + ".shp");
-        LOG.debug("writing out shapefile {}", shapeFile);
-        ShapefileDataStore outStore = new ShapefileDataStore(shapeFile.toURI().toURL());
-        outStore.createSchema(contourSchema);
-        Transaction transaction = new DefaultTransaction("create");
-        SimpleFeatureStore featureStore = (SimpleFeatureStore) outStore.getFeatureSource();
-        featureStore.setTransaction(transaction);
-        try {
-            featureStore.addFeatures(contourFeatures);
-            transaction.commit();
-        } catch (Exception e) {
-            transaction.rollback();
-            throw e;
-        } finally {
-            transaction.close();
-        }
-        shapeDir.deleteOnExit(); // Note: the order is important
-        for (File f : shapeDir.listFiles())
-            f.deleteOnExit();
-        /* Zip up the shapefile components */
-        StreamingOutput output = new DirectoryZipper(shapeDir);
-        if (stream) {
-            return Response.ok().entity(output).build();
-        } else {
-            File zipFile = new File(shapeDir, shpName + ".zip");
-            OutputStream fos = new FileOutputStream(zipFile);
-            output.write(fos);
-            zipFile.deleteOnExit();
-            return Response.ok().entity(zipFile).build();
-        }
     }
 
     /**
