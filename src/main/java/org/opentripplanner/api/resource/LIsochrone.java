@@ -25,10 +25,8 @@ import java.util.zip.ZipOutputStream;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.CacheControl;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.StreamingOutput;
 
@@ -90,7 +88,6 @@ public class LIsochrone extends RoutingResource {
     private static final SimpleFeatureType contourSchema = makeContourSchema();
 
     @GET
-    @Produces(MediaType.APPLICATION_JSON)
     public Response getGeoJsonIsochrone() throws Exception {
         SimpleFeatureCollection contourFeatures = makeContourFeatures(computeIsochrone());
         StringWriter writer = new StringWriter();
