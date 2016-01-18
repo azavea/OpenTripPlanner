@@ -148,6 +148,7 @@ public class PointSet implements Serializable {
         }
         int latCol = -1;
         int lonCol = -1;
+        int idCol = -1;
 
         // An array of property magnitudes corresponding to each column in the input. 
         // Some of these will remain null (specifically, the lat and lon columns which do not contain magnitudes)
@@ -158,6 +159,8 @@ public class PointSet implements Serializable {
                 latCol = c;
             } else if (header.equalsIgnoreCase("lon") || header.equalsIgnoreCase("longitude")) {
                 lonCol = c;
+            } else if (header.equalsIgnoreCase("id") || header.equalsIgnoreCase("geoid")) {
+                idCol = c;
             } else {
                 ret.getOrCreatePropertyForId(header);
                 properties[c] = ret.properties.get(header);
@@ -172,7 +175,7 @@ public class PointSet implements Serializable {
         while (reader.readRecord()) {
             int rec = (int) reader.getCurrentRecord();
             for (int c = 0; c < nCols; c++) {
-                if(c==latCol || c==lonCol){
+                if (c == latCol || c == lonCol || c == idCol) {
                     continue;
                 }
 
