@@ -46,10 +46,12 @@ public class PointSetResource {
         if (pset == null) {
             return Response.status(Status.NOT_FOUND).entity("Invalid PointSet ID.").build();
         }
+        /*
         if (pset.capacity > 200) {
             // too big, just give a summary
             return Response.ok().entity(new PointSetShort(pointSetId, pset)).build();
         }
+        */
         return Response.ok().entity(new StreamingOutput() {
             @Override
             public void write(OutputStream output) throws IOException, WebApplicationException {
