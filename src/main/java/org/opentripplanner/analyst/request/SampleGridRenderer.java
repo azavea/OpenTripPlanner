@@ -244,12 +244,12 @@ public class SampleGridRenderer {
             double b = z.wBoardings / z.w;
             double wd = z.wWalkDist / z.w;
             double d = SphericalDistanceLibrary.fastDistance(C0, Cs, cosLat);
-            // additionnal time
+            // additional time
             double dt = d / offRoadSpeed;
             /*
              * Compute weight for time. The weight function to distance here is somehow arbitrary.
              * It only purpose is to weight the samples when there is various samples within the
-             * same "cell", giving more weight to the closests samples to the cell center.
+             * same "cell", giving more weight to the closest sample to the cell center.
              */
             double w = 1 / ((d + gridSizeMeters) * (d + gridSizeMeters));
             if (zS == null) {
