@@ -40,7 +40,7 @@ public class TileCache extends CacheLoader<TileRequest, Tile>
     }
 
     private LoadingCache<TileRequest, Tile> tileCache;
-    public int size = 600;
+    public int size = 12288;
     public int concurrency = 16;
 
     @Override
