@@ -42,32 +42,22 @@ public class SampleSet {
     public int[] eval (TimeSurface surf) {
         final float WALK_SPEED = 1.33f;
         int[] ret = new int[pset.capacity];
-        int s0 = 0;
-        int s1 = 0;
         for (int i = 0; i < pset.capacity; i++) {
             int m0 = Integer.MAX_VALUE;
             int m1 = Integer.MAX_VALUE;
             if (v0s[i] != null) {
-                s0 = surf.getTime(v0s[i]);
+                int s0 = surf.getTime(v0s[i]);
                 if (s0 != TimeSurface.UNREACHABLE) {
                     m0 = (int) (s0 + d0s[i] / WALK_SPEED);
                 }
             }
             if (v1s[i] != null) {
-                s1 = surf.getTime(v1s[i]);
+                int s1 = surf.getTime(v1s[i]);
                 if (s1 != TimeSurface.UNREACHABLE) {
                     m1 = (int) (s1 + d1s[i] / WALK_SPEED);
                 }
             }
             ret[i] = (m0 < m1) ? m0 : m1;
-
-            if (ret[i] < 900) {
-                PointFeature feat = pset.getFeature(i);
-                System.out.println("Feature ID: " + feat.getId() + " at: (" + pset.lats[i] + ", " + pset.lons[i] + ")");
-                System.out.println("Time " + ret[i] + " from vertex v0 " + v0s[i] + " to v1 " + v1s[i]);
-                System.out.println("s0: " + s0 + " s1: " + s1 + " m0: " + m0 + " m1: " + m1);
-                System.out.println("d0s: " + d0s[i] + "d1s: " + d1s[i]);
-            }
         }
         return ret;
     }

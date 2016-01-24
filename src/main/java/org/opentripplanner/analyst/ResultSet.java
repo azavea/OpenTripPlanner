@@ -70,12 +70,6 @@ public class ResultSet implements Serializable{
         // Evaluate the surface at all points in the pointset
         int[] times = samples.eval(surface);
 
-        /////////////////////////////////////////////////
-        System.out.println("Going to buildHistograms for # times: " + times.length);
-        System.out.println("TimeSurface cutoffMinutes: " + surface.cutoffMinutes);
-        System.out.println("TimeSurface param keys: " + surface.params.keySet());
-        System.out.println("TimeSurface param cutoffMinutes value: " + surface.params.get("cutoffMinutes"));
-
         this.cutoffMinutes = surface.cutoffMinutes;
 
         buildHistograms(times, targets);
@@ -88,9 +82,6 @@ public class ResultSet implements Serializable{
     }
     
     private void buildIsochrones(TimeSurface surface) {
-        ///////////////
-        System.out.println("Going to build isochrones from TimeSurface");
-        //////////////////
         List<IsochroneData> id = SurfaceResource.getIsochronesAccumulative(surface, 5, 24);
         this.isochrones = new IsochroneData[id.size()];
         id.toArray(this.isochrones);
@@ -121,10 +112,6 @@ public class ResultSet implements Serializable{
             buildHistograms(times, targets);
         }
 
-        ///////////////////
-        System.out.println("Going to build isochrones from times");
-        //////////////////
-
         if (includeIsochrones)
             buildIsochrones(times, targets);
     }
@@ -135,8 +122,6 @@ public class ResultSet implements Serializable{
      * Each new histogram object will be stored as a part of this result set keyed on its property/category.
      */
     protected void buildHistograms(int[] times, PointSet targets) {
-        /////////////////////////////////////////////////////////////////////
-        System.out.println("In buildHistograms with # times: " + times.length + " and cutoffMinutes: " + cutoffMinutes);
         this.histograms = Histogram.buildAll(times, targets, cutoffMinutes);
     }
 

@@ -184,7 +184,7 @@ public class TimeSurface implements Serializable {
         long t0 = System.currentTimeMillis();
 
         // also hard-coded in SurfaceResource getIsochronesAccumulative
-        final double gridSizeMeters = 300; // Todo: set dynamically and make sure this matches isoline builder params
+        final double gridSizeMeters = 200; // Todo: set dynamically and make sure this matches isoline builder params
         final double V0 = 1.00; // off-road walk speed in m/sec
         Coordinate coordinateOrigin = new Coordinate();
         final double cosLat = FastMath.cos(toRadians(coordinateOrigin.y));

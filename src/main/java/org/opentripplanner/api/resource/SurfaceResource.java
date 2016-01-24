@@ -243,42 +243,8 @@ public class SurfaceResource extends RoutingResource {
             surf.makeSampleGridWithoutSPT();
         }
 
-        ///////////
-        IsolineBuilder.ZMetric<WTWD> zMetric = new IsolineBuilder.ZMetric<WTWD>() {
-            @Override
-            public int cut(WTWD zA, WTWD zB, WTWD z0) {
-                double t0 = z0.wTime / z0.w;
-                double tA = zA.d > z0.d ? Double.POSITIVE_INFINITY : zA.wTime / zA.w;
-                double tB = zB.d > z0.d ? Double.POSITIVE_INFINITY : zB.wTime / zB.w;
-                if (tA < t0 && t0 <= tB)
-                    return 1;
-                if (tB < t0 && t0 <= tA)
-                    return -1;
-                return 0;
-            }
-
-            @Override
-            public double interpolate(WTWD zA, WTWD zB, WTWD z0) {
-                if (zA.d > z0.d || zB.d > z0.d) {
-                    if (zA.d > z0.d && zB.d > z0.d)
-                        throw new AssertionError("dA > d0 && dB > d0");
-                    // Interpolate on d
-                    double k = zA.d == zB.d ? 0.5 : (z0.d - zA.d) / (zB.d - zA.d);
-                    return k;
-                } else {
-                    // Interpolate on t
-                    double tA = zA.wTime / zA.w;
-                    double tB = zB.wTime / zB.w;
-                    double t0 = z0.wTime / z0.w;
-                    double k = tA == tB ? 0.5 : (t0 - tA) / (tB - tA);
-                    return k;
-                }
-            }
-        };
-        ///////////////////////////
-
         DelaunayIsolineBuilder<WTWD> isolineBuilder = new DelaunayIsolineBuilder<WTWD>(
-                surf.sampleGrid.delaunayTriangulate(), zMetric); //new WTWD.IsolineMetric());
+                surf.sampleGrid.delaunayTriangulate(), new WTWD.IsolineMetric());
 
         List<IsochroneData> isochrones = new ArrayList<IsochroneData>();
         for (int minutes = spacing, n = 0; minutes <= surf.cutoffMinutes && n < nMax; minutes += spacing, n++) {
@@ -287,7 +253,7 @@ public class SurfaceResource extends RoutingResource {
             z0.w = 1.0;
             z0.wTime = seconds;
             // also hard-coded in TimeSurface makeSampleGrid
-            z0.d = 150; // meters. TODO set dynamically / properly, make sure it matches grid cell size?
+            z0.d = 200; // meters. TODO set dynamically / properly, make sure it matches grid cell size?
             IsochroneData isochrone = new IsochroneData(seconds, isolineBuilder.computeIsoline(z0));
             isochrones.add(isochrone);
          }
