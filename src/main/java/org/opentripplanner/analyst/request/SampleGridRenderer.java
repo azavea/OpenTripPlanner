@@ -116,7 +116,7 @@ public class SampleGridRenderer {
         final AccumulativeGridSampler<WTWD> gridSampler = new AccumulativeGridSampler<WTWD>(sampleGrid, accMetric);
 
         // At which distance we split edges along the geometry during sampling.
-        // For best results, this should be slighly lower than the grid size.
+        // For best results, this should be slightly lower than the grid size.
         double walkerSplitDistanceMeters = gridSizeMeters * 0.5;
 
         SPTWalker johnny = new SPTWalker(spt);

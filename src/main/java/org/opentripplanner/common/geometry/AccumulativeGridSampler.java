@@ -109,7 +109,7 @@ public class AccumulativeGridSampler<TZ> {
     public final void close() {
         if (closed)
             return;
-        closed = true;
+
         List<ZSamplePoint<TZ>> processList = new ArrayList<ZSamplePoint<TZ>>(sampleGrid.size());
         for (ZSamplePoint<TZ> A : sampleGrid) {
             processList.add(A);
@@ -150,6 +150,7 @@ public class AccumulativeGridSampler<TZ> {
             round++;
         }
         LOG.info("Added {} closing samples to get a total of {}.", n, sampleGrid.size());
+        closed = true;
     }
 
     private final ZSamplePoint<TZ> closeSample(int x, int y) {
