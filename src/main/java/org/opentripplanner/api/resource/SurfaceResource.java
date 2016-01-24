@@ -10,7 +10,9 @@ import org.opentripplanner.analyst.SampleSet;
 import org.opentripplanner.analyst.TimeSurface;
 import org.opentripplanner.analyst.core.IsochroneData;
 import org.opentripplanner.analyst.core.SlippyTile;
+import org.opentripplanner.analyst.request.IsoChroneSPTRendererAccSampling;
 import org.opentripplanner.analyst.request.RenderRequest;
+import org.opentripplanner.analyst.request.SampleGridRenderer;
 import org.opentripplanner.analyst.request.SampleGridRenderer.WTWD;
 import org.opentripplanner.analyst.request.TileRequest;
 import org.opentripplanner.api.common.ParameterException;
@@ -22,6 +24,8 @@ import org.opentripplanner.api.parameter.Layer;
 import org.opentripplanner.api.parameter.MIMEImageFormat;
 import org.opentripplanner.api.parameter.Style;
 import org.opentripplanner.common.geometry.DelaunayIsolineBuilder;
+import org.opentripplanner.common.geometry.IsolineBuilder;
+import org.opentripplanner.common.geometry.ZSampleGrid;
 import org.opentripplanner.routing.algorithm.EarliestArrivalSearch;
 import org.opentripplanner.routing.core.RoutingRequest;
 import org.opentripplanner.routing.spt.ShortestPathTree;
@@ -77,6 +81,7 @@ public class SurfaceResource extends RoutingResource {
             EarliestArrivalSearch sptService = new EarliestArrivalSearch();
             sptService.maxDuration = (60 * cutoffMinutes);
             ShortestPathTree spt = sptService.getShortestPathTree(req);
+
             req.cleanup();
             if (spt != null) {
                 TimeSurface surface = new TimeSurface(spt);
@@ -85,7 +90,6 @@ public class SurfaceResource extends RoutingResource {
                     // include only the first instance of each query parameter
                     surface.params.put(e.getKey(), e.getValue().get(0));
                 }
-                surface.cutoffMinutes = cutoffMinutes;
                 otpServer.surfaceCache.add(surface);
                 return Response.ok().entity(new TimeSurfaceShort(surface)).build(); // .created(URI)
             } else {
@@ -125,17 +129,13 @@ public class SurfaceResource extends RoutingResource {
         if (pset == null) return badRequest("Missing or invalid target PointSet ID.");
 
         Router router = otpServer.getRouter(surf.routerId);
-        // TODO cache this sampleset
-        SampleSet samples = pset.getSampleSet(router.graph);
+
+        SampleSet samples = pset.getOrCreateSampleSet(router.graph);
+
         final ResultSet indicator = new ResultSet(samples, surf, detail, detail);
         if (indicator == null) return badServer("Could not compute indicator as requested.");
 
-        return Response.ok().entity(new StreamingOutput() {
-            @Override
-            public void write(OutputStream output) throws IOException, WebApplicationException {
-                indicator.writeJson(output);
-            }
-        }).build();
+        return Response.ok().entity((StreamingOutput) output -> indicator.writeJson(output)).build();
 
     }
 
@@ -150,6 +150,8 @@ public class SurfaceResource extends RoutingResource {
         if (spacing < 1) spacing = 30;
         List<IsochroneData> isochrones = getIsochronesAccumulative(surf, spacing, nMax);
         // NOTE that cutoffMinutes in the surface must be properly set for the following call to work
+
+        System.out.println("Going to make contour features...");
         final FeatureCollection fc = LIsochrone.makeContourFeatures(isochrones);
         return Response.ok().entity(new StreamingOutput() {
             @Override
@@ -244,6 +246,7 @@ public class SurfaceResource extends RoutingResource {
             // The sample grid was not built from the SPT; make a minimal one including only time from the vertices in this timesurface
             surf.makeSampleGridWithoutSPT();
         }
+
         DelaunayIsolineBuilder<WTWD> isolineBuilder = new DelaunayIsolineBuilder<WTWD>(
                 surf.sampleGrid.delaunayTriangulate(), new WTWD.IsolineMetric());
 
@@ -253,6 +256,8 @@ public class SurfaceResource extends RoutingResource {
             WTWD z0 = new WTWD();
             z0.w = 1.0;
             z0.wTime = seconds;
+            // also hard-coded in TimeSurface makeSampleGrid
+            // actually this is off-road distance meters
             z0.d = 300; // meters. TODO set dynamically / properly, make sure it matches grid cell size?
             IsochroneData isochrone = new IsochroneData(seconds, isolineBuilder.computeIsoline(z0));
             isochrones.add(isochrone);

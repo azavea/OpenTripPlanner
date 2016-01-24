@@ -43,12 +43,14 @@ public class TimeSurface implements Serializable {
     public final int id;
     public final TObjectIntMap<Vertex> times = new TObjectIntHashMap<Vertex>(500000, 0.5f, UNREACHABLE);
     public final double lat, lon;
+    public final Coordinate from;
     public int cutoffMinutes = 90; // this should really be copied from the data source but the new repeated raptor does not do so
     public long dateTime;
     public Map<String, String> params; // The query params sent by the user, for reference only
     public SparseMatrixZSampleGrid<WTWD> sampleGrid; // another representation on a regular grid with a triangulation
     public String description;
     public double walkSpeed = 1.33; // meters/sec TODO could we just store the whole routing request instead of params?
+
 
     /** Create a time surface with a sample grid */
     public TimeSurface(ShortestPathTree spt) {
@@ -83,8 +85,10 @@ public class TimeSurface implements Serializable {
         GenericLocation from = spt.getOptions().from;
         this.lon = from.lng;
         this.lat = from.lat;
+        this.from = from.getCoordinate();
         this.id = makeUniqueId();
         this.dateTime = spt.getOptions().dateTime;
+
         long t1 = System.currentTimeMillis();
         LOG.info("Made TimeSurface from SPT in {} msec.", (int) (t1 - t0));
         
@@ -97,6 +101,7 @@ public class TimeSurface implements Serializable {
         ProfileRequest req = profileRouter.request;
         lon = req.fromLon;
         lat = req.fromLat;
+        from = new Coordinate(req.fromLon, req.fromLat);
         id = makeUniqueId();
         dateTime = req.fromTime; // FIXME
         routerId = profileRouter.graph.routerId;
@@ -111,6 +116,7 @@ public class TimeSurface implements Serializable {
         ProfileRequest req = profileRouter.request;
         lon = req.fromLon;
         lat = req.fromLat;
+        from = new Coordinate(req.fromLon, req.fromLat);
         id = makeUniqueId();
         dateTime = req.fromTime; // FIXME
         routerId = profileRouter.graph.routerId;
@@ -123,6 +129,7 @@ public class TimeSurface implements Serializable {
         ProfileRequest req = profileRouter.request;
         lon = req.fromLon;
         lat = req.fromLat;
+        from = new Coordinate(req.fromLon, req.fromLat);
         id = makeUniqueId();
         dateTime = req.fromTime; // FIXME
         routerId = profileRouter.graph.routerId;
@@ -132,6 +139,7 @@ public class TimeSurface implements Serializable {
         ProfileRequest req = profileRouter.request;
         lon = req.fromLon;
         lat = req.fromLat;
+        from = new Coordinate(req.fromLon, req.fromLat);
         id = makeUniqueId();
         dateTime = req.fromTime; // FIXME
         routerId = profileRouter.graph.routerId;
@@ -181,9 +189,11 @@ public class TimeSurface implements Serializable {
     // however, the existing sampler needs an SPT, not general vertex-time mappings.
     private void makeSampleGrid (ShortestPathTree spt) {
         long t0 = System.currentTimeMillis();
+
+        // also hard-coded in SurfaceResource getIsochronesAccumulative
         final double gridSizeMeters = 300; // Todo: set dynamically and make sure this matches isoline builder params
         final double V0 = 1.00; // off-road walk speed in m/sec
-        Coordinate coordinateOrigin = new Coordinate();
+        Coordinate coordinateOrigin = from;
         final double cosLat = FastMath.cos(toRadians(coordinateOrigin.y));
         double dY = Math.toDegrees(gridSizeMeters / SphericalDistanceLibrary.RADIUS_OF_EARTH_IN_M);
         double dX = dY / cosLat;

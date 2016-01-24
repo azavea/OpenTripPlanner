@@ -40,7 +40,7 @@ public class SampleSet {
     }
 
     public int[] eval (TimeSurface surf) {
-        final float WALK_SPEED = 1.3f;
+        final float WALK_SPEED = 1.33f;
         int[] ret = new int[pset.capacity];
         for (int i = 0; i < pset.capacity; i++) {
             int m0 = Integer.MAX_VALUE;
@@ -64,7 +64,7 @@ public class SampleSet {
     
     /** Evaluate an array of times where indices are keyed to vertex indices, with Integer.MAX_VALUE indicating unreachability both in the inputs and the outputs */
     public int[] eval(int[] times) {
-        final float WALK_SPEED = 1.3f;
+        final float WALK_SPEED = 1.33f;
         int[] ret = new int[pset.capacity];
         for (int i = 0; i < pset.capacity; i++) {
             int m0 = Integer.MAX_VALUE;

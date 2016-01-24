@@ -11,7 +11,6 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Map;
-import java.util.stream.IntStream;
 
 /**
  * A pair of parallel histograms representing how many features are located at each amount of travel time 
@@ -88,18 +87,17 @@ public class Histogram implements Serializable {
     /** no-arg constructor for serialization/deserialization */
     public Histogram () {}
 
-    public static Map<String, Histogram> buildAll (int[] times, PointSet targets) {
+    public static Map<String, Histogram> buildAll (int[] times, PointSet targets, int cutoffMinutes) {
         try {
             // bin counts and all properties
-            int size = IntStream.of(times).reduce(0, (memo, i) -> i != Integer.MAX_VALUE ? Math.max(i, memo) : memo) + 1;
-
-            int[] binnedCounts = new int[size];
+            int seconds = cutoffMinutes * 60;
+            int[] binnedCounts = new int[seconds];
 
             // use an identity hash map so that lookups are speedy - we only need this in the context of
             // this function
             Map<String, int[]> binnedProperties = new IdentityHashMap<>();
             for (String key : targets.properties.keySet()) {
-                binnedProperties.put(key, new int[size]);
+                binnedProperties.put(key, new int[seconds]);
             }
 
             for (int fidx = 0; fidx < times.length; fidx++) {
@@ -113,9 +111,19 @@ public class Histogram implements Serializable {
                 }
             }
 
+            // take the counts binned by seconds and convert to the total count accessible, per minute
+            int counts[] = new int[cutoffMinutes];
+            int total = 0;
+            int minute = 0;
+            for (int i = 0; i < seconds; i++) {
+                total += binnedCounts[i];
+                if (i % 60 == 59) {
+                    counts[minute++] = total;
+                }
+            }
+
             // make the histograms
             // counts are the same for all histograms
-            int[] counts = weightingFunction.apply(binnedCounts);
 
             Map<String, Histogram> ret = new HashMap<>();
 

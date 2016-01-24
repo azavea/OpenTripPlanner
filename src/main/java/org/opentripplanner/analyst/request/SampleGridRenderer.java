@@ -116,7 +116,7 @@ public class SampleGridRenderer {
         final AccumulativeGridSampler<WTWD> gridSampler = new AccumulativeGridSampler<WTWD>(sampleGrid, accMetric);
 
         // At which distance we split edges along the geometry during sampling.
-        // For best results, this should be slighly lower than the grid size.
+        // For best results, this should be slightly lower than the grid size.
         double walkerSplitDistanceMeters = gridSizeMeters * 0.5;
 
         SPTWalker johnny = new SPTWalker(spt);
@@ -129,7 +129,7 @@ public class SampleGridRenderer {
             @Override
             public final void visit(Edge e, Coordinate c, State s0, State s1, double d0, double d1, double speedAlongEdge) {
                 double wd0 = s0.getWalkDistance() + d0;
-                double wd1 = s0.getWalkDistance() + d1;
+                double wd1 = s1.getWalkDistance() + d1;
                 double t0 = wd0 > maxWalkDistance ? Double.POSITIVE_INFINITY : s0.getActiveTime()
                         + d0 / speedAlongEdge;
                 double t1 = wd1 > maxWalkDistance ? Double.POSITIVE_INFINITY : s1.getActiveTime()
@@ -244,12 +244,12 @@ public class SampleGridRenderer {
             double b = z.wBoardings / z.w;
             double wd = z.wWalkDist / z.w;
             double d = SphericalDistanceLibrary.fastDistance(C0, Cs, cosLat);
-            // additionnal time
+            // additional time
             double dt = d / offRoadSpeed;
             /*
              * Compute weight for time. The weight function to distance here is somehow arbitrary.
              * It only purpose is to weight the samples when there is various samples within the
-             * same "cell", giving more weight to the closests samples to the cell center.
+             * same "cell", giving more weight to the closest sample to the cell center.
              */
             double w = 1 / ((d + gridSizeMeters) * (d + gridSizeMeters));
             if (zS == null) {

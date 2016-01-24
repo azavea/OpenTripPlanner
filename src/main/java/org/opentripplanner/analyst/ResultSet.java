@@ -52,6 +52,8 @@ public class ResultSet implements Serializable{
     /** Isochrone geometries around the origin, may be null. */
     public IsochroneData[] isochrones;
 
+    protected int cutoffMinutes = 90;
+
     public ResultSet() {
     }
 
@@ -67,6 +69,9 @@ public class ResultSet implements Serializable{
         PointSet targets = samples.pset;
         // Evaluate the surface at all points in the pointset
         int[] times = samples.eval(surface);
+
+        this.cutoffMinutes = surface.cutoffMinutes;
+
         buildHistograms(times, targets);
 
         if (includeTimes)
@@ -103,8 +108,9 @@ public class ResultSet implements Serializable{
         if (includeTimes)
             this.times = times;
 
-        if (includeHistograms)
+        if (includeHistograms) {
             buildHistograms(times, targets);
+        }
 
         if (includeIsochrones)
             buildIsochrones(times, targets);
@@ -116,7 +122,7 @@ public class ResultSet implements Serializable{
      * Each new histogram object will be stored as a part of this result set keyed on its property/category.
      */
     protected void buildHistograms(int[] times, PointSet targets) {
-        this.histograms = Histogram.buildAll(times, targets);
+        this.histograms = Histogram.buildAll(times, targets, cutoffMinutes);
     }
 
     /**
