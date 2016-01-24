@@ -295,7 +295,7 @@ public class SurfaceResource extends RoutingResource {
         }
 
         TileRequest tileRequest = new TileRequest(bbox, width, height);
-        RenderRequest renderRequest = new RenderRequest(format, Layer.TRAVELTIME, Style.GRAY, false, false);
+        RenderRequest renderRequest = new RenderRequest(format, Layer.TRAVELTIME, Style.GRAY, false, false, true);
         return router.renderer.getResponse(tileRequest, surface, null, renderRequest);
     }
 

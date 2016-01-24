@@ -38,6 +38,8 @@ public class Renderer {
 
     private TileCache tileCache;
 
+    private static final DateFormat df = DateFormat.getDateTimeInstance();
+
     public Renderer(TileCache tileCache) {
         this.tileCache = tileCache;
     }
@@ -50,6 +52,9 @@ public class Renderer {
         Tile tile = tileCache.get(tileRequest);
         BufferedImage image;
         switch (renderRequest.layer) {
+        case TRAVELTIME :
+            image = tile.generateImage(surfA, renderRequest);
+            break;
         case DIFFERENCE :
             image = tile.linearCombination(1, surfA, -1, surfB, 0, renderRequest);
             break;
@@ -57,7 +62,6 @@ public class Renderer {
             long elapsed = Math.abs(surfB.dateTime - surfA.dateTime);
             image = tile.linearCombination(-1, surfA, -1, surfB, elapsed/60, renderRequest);
             break;
-        case TRAVELTIME :
         default :
             image = tile.generateImage(surfA, renderRequest);
         }
@@ -65,7 +69,6 @@ public class Renderer {
         // add a timestamp to the image if requested. 
         // of course this will make it useless as a raster for analysis, but it's good for animations.
         if (renderRequest.timestamp) {
-            DateFormat df = DateFormat.getDateTimeInstance();
             df.setTimeZone(TimeZone.getTimeZone("America/New_York"));
             String ds = df.format(new Date(surfA.dateTime * 1000));
             shadowWrite(image, ds, String.format("%f, %f", surfA.lat, surfA.lon));
@@ -76,12 +79,13 @@ public class Renderer {
             g2d.dispose();
         }
                 
-        // geotiff kludge
-        if (renderRequest.format.toString().equals("image/geotiff")) {
+
+        if (!renderRequest.getGeotiff) {
+            return generateStreamingImageResponse(image, renderRequest.format);
+        } else {
+            // get geotiff
             GridCoverage2D gc = tile.getGridCoverage2D(image);
             return generateStreamingGeotiffResponse(gc);
-        } else {
-            return generateStreamingImageResponse(image, renderRequest.format);
         }
     }
     
@@ -120,10 +124,7 @@ public class Renderer {
         StreamingOutput streamingOutput = new StreamingOutput() {
             public void write(OutputStream outStream) {
                 try {
-                    long t0 = System.currentTimeMillis();
                     ImageIO.write(image, format.type, outStream);
-                    long t1 = System.currentTimeMillis();
-                    LOG.debug("wrote image in {}msec", (int)(t1-t0));
                 } catch (Exception e) {
                     LOG.error("exception while preparing image : {}", e.getMessage());
                     throw new WebApplicationException(e);
@@ -142,20 +143,17 @@ public class Renderer {
     
     
     private static Response generateStreamingGeotiffResponse(final GridCoverage2D coverage) {
+        final GeoTiffWriteParams wp = new GeoTiffWriteParams();
+        wp.setCompressionMode(GeoTiffWriteParams.MODE_EXPLICIT);
+        wp.setCompressionType("LZW");
+        final ParameterValueGroup params = new GeoTiffFormat().getWriteParameters();
+        params.parameter(AbstractGridFormat.GEOTOOLS_WRITE_PARAMS.getName().toString()).setValue(wp);
+        final GeneralParameterValue[] vals = params.values().toArray(new GeneralParameterValue[1]);
         
         StreamingOutput streamingOutput = new StreamingOutput() {
             public void write(OutputStream outStream) {
                 try {
-                    long t0 = System.currentTimeMillis();
-                    GeoTiffWriteParams wp = new GeoTiffWriteParams();
-                    wp.setCompressionMode(GeoTiffWriteParams.MODE_EXPLICIT);
-                    wp.setCompressionType("LZW");
-                    ParameterValueGroup params = new GeoTiffFormat().getWriteParameters();
-                    params.parameter(AbstractGridFormat.GEOTOOLS_WRITE_PARAMS.getName().toString()).setValue(wp);
-                    new GeoTiffWriter(outStream).write(coverage, (GeneralParameterValue[]) params.values().toArray(new GeneralParameterValue[1]));
-                    //new GeoTiffWriter(outStream).write(coverage, null); //wasn't this line writing twice and trashing compressed version?
-                    long t1 = System.currentTimeMillis();
-                    LOG.debug("wrote geotiff in {}msec", t1-t0);
+                    new GeoTiffWriter(outStream).write(coverage, vals);
                 } catch (Exception e) {
                     LOG.error("exception while preparing geotiff : {}", e.getMessage());
                     throw new WebApplicationException(e);
