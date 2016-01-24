@@ -129,7 +129,7 @@ public class SampleGridRenderer {
             @Override
             public final void visit(Edge e, Coordinate c, State s0, State s1, double d0, double d1, double speedAlongEdge) {
                 double wd0 = s0.getWalkDistance() + d0;
-                double wd1 = s0.getWalkDistance() + d1;
+                double wd1 = s1.getWalkDistance() + d1;
                 double t0 = wd0 > maxWalkDistance ? Double.POSITIVE_INFINITY : s0.getActiveTime()
                         + d0 / speedAlongEdge;
                 double t1 = wd1 > maxWalkDistance ? Double.POSITIVE_INFINITY : s1.getActiveTime()
