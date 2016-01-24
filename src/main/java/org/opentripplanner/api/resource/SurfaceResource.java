@@ -22,6 +22,7 @@ import org.opentripplanner.api.parameter.Layer;
 import org.opentripplanner.api.parameter.MIMEImageFormat;
 import org.opentripplanner.api.parameter.Style;
 import org.opentripplanner.common.geometry.DelaunayIsolineBuilder;
+import org.opentripplanner.common.geometry.IsolineBuilder;
 import org.opentripplanner.routing.algorithm.EarliestArrivalSearch;
 import org.opentripplanner.routing.core.RoutingRequest;
 import org.opentripplanner.routing.spt.ShortestPathTree;
@@ -125,17 +126,13 @@ public class SurfaceResource extends RoutingResource {
         if (pset == null) return badRequest("Missing or invalid target PointSet ID.");
 
         Router router = otpServer.getRouter(surf.routerId);
-        // TODO cache this sampleset
-        SampleSet samples = pset.getSampleSet(router.graph);
+
+        SampleSet samples = pset.getOrCreateSampleSet(router.graph);
+
         final ResultSet indicator = new ResultSet(samples, surf, detail, detail);
         if (indicator == null) return badServer("Could not compute indicator as requested.");
 
-        return Response.ok().entity(new StreamingOutput() {
-            @Override
-            public void write(OutputStream output) throws IOException, WebApplicationException {
-                indicator.writeJson(output);
-            }
-        }).build();
+        return Response.ok().entity((StreamingOutput) output -> indicator.writeJson(output)).build();
 
     }
 
@@ -241,11 +238,47 @@ public class SurfaceResource extends RoutingResource {
 
         long t0 = System.currentTimeMillis();
         if (surf.sampleGrid == null) {
+            System.out.println("Building a sampleGrid without SPT");
             // The sample grid was not built from the SPT; make a minimal one including only time from the vertices in this timesurface
             surf.makeSampleGridWithoutSPT();
         }
+
+        ///////////
+        IsolineBuilder.ZMetric<WTWD> zMetric = new IsolineBuilder.ZMetric<WTWD>() {
+            @Override
+            public int cut(WTWD zA, WTWD zB, WTWD z0) {
+                double t0 = z0.wTime / z0.w;
+                double tA = zA.d > z0.d ? Double.POSITIVE_INFINITY : zA.wTime / zA.w;
+                double tB = zB.d > z0.d ? Double.POSITIVE_INFINITY : zB.wTime / zB.w;
+                if (tA < t0 && t0 <= tB)
+                    return 1;
+                if (tB < t0 && t0 <= tA)
+                    return -1;
+                return 0;
+            }
+
+            @Override
+            public double interpolate(WTWD zA, WTWD zB, WTWD z0) {
+                if (zA.d > z0.d || zB.d > z0.d) {
+                    if (zA.d > z0.d && zB.d > z0.d)
+                        throw new AssertionError("dA > d0 && dB > d0");
+                    // Interpolate on d
+                    double k = zA.d == zB.d ? 0.5 : (z0.d - zA.d) / (zB.d - zA.d);
+                    return k;
+                } else {
+                    // Interpolate on t
+                    double tA = zA.wTime / zA.w;
+                    double tB = zB.wTime / zB.w;
+                    double t0 = z0.wTime / z0.w;
+                    double k = tA == tB ? 0.5 : (t0 - tA) / (tB - tA);
+                    return k;
+                }
+            }
+        };
+        ///////////////////////////
+
         DelaunayIsolineBuilder<WTWD> isolineBuilder = new DelaunayIsolineBuilder<WTWD>(
-                surf.sampleGrid.delaunayTriangulate(), new WTWD.IsolineMetric());
+                surf.sampleGrid.delaunayTriangulate(), zMetric); //new WTWD.IsolineMetric());
 
         List<IsochroneData> isochrones = new ArrayList<IsochroneData>();
         for (int minutes = spacing, n = 0; minutes <= surf.cutoffMinutes && n < nMax; minutes += spacing, n++) {
@@ -253,7 +286,8 @@ public class SurfaceResource extends RoutingResource {
             WTWD z0 = new WTWD();
             z0.w = 1.0;
             z0.wTime = seconds;
-            z0.d = 300; // meters. TODO set dynamically / properly, make sure it matches grid cell size?
+            // also hard-coded in TimeSurface makeSampleGrid
+            z0.d = 150; // meters. TODO set dynamically / properly, make sure it matches grid cell size?
             IsochroneData isochrone = new IsochroneData(seconds, isolineBuilder.computeIsoline(z0));
             isochrones.add(isochrone);
          }

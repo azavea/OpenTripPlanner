@@ -102,7 +102,7 @@ public class CSVPopulation extends BasicPopulation {
                         lon = transformed.getX();
                         lat = transformed.getY();
                     }
-                }                	
+                }
                 else {
                     lon = x;
                     lat = y;

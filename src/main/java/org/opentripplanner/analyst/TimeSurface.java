@@ -85,6 +85,7 @@ public class TimeSurface implements Serializable {
         this.lat = from.lat;
         this.id = makeUniqueId();
         this.dateTime = spt.getOptions().dateTime;
+
         long t1 = System.currentTimeMillis();
         LOG.info("Made TimeSurface from SPT in {} msec.", (int) (t1 - t0));
         
@@ -181,6 +182,8 @@ public class TimeSurface implements Serializable {
     // however, the existing sampler needs an SPT, not general vertex-time mappings.
     private void makeSampleGrid (ShortestPathTree spt) {
         long t0 = System.currentTimeMillis();
+
+        // also hard-coded in SurfaceResource getIsochronesAccumulative
         final double gridSizeMeters = 300; // Todo: set dynamically and make sure this matches isoline builder params
         final double V0 = 1.00; // off-road walk speed in m/sec
         Coordinate coordinateOrigin = new Coordinate();
