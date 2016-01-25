@@ -5,6 +5,7 @@ import gnu.trove.iterator.TObjectIntIterator;
 import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
 import org.apache.commons.math3.util.FastMath;
+import org.opentripplanner.analyst.request.Renderer;
 import org.opentripplanner.analyst.request.SampleGridRenderer;
 import org.opentripplanner.analyst.request.SampleGridRenderer.WTWD;
 import org.opentripplanner.common.geometry.AccumulativeGridSampler;
@@ -26,6 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
+import java.lang.ref.WeakReference;
 import java.util.Map;
 
 import static org.apache.commons.math3.util.FastMath.toRadians;
@@ -50,6 +52,7 @@ public class TimeSurface implements Serializable {
     public SparseMatrixZSampleGrid<WTWD> sampleGrid; // another representation on a regular grid with a triangulation
     public String description;
     public double walkSpeed = 1.33; // meters/sec TODO could we just store the whole routing request instead of params?
+    public WeakReference<Renderer> renderer;
 
 
     /** Create a time surface with a sample grid */

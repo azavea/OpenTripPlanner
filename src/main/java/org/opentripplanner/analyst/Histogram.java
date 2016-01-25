@@ -101,7 +101,13 @@ public class Histogram implements Serializable {
             }
 
             for (int fidx = 0; fidx < times.length; fidx++) {
+
+                // point is inaccessible
                 if (times[fidx] == Integer.MAX_VALUE)
+                    continue;
+
+                // travel time to point is outside cutoff range
+                if (times[fidx] >= seconds)
                     continue;
 
                 binnedCounts[times[fidx]] += 1;

@@ -10,11 +10,8 @@ import org.opentripplanner.analyst.SampleSet;
 import org.opentripplanner.analyst.TimeSurface;
 import org.opentripplanner.analyst.core.IsochroneData;
 import org.opentripplanner.analyst.core.SlippyTile;
-import org.opentripplanner.analyst.request.IsoChroneSPTRendererAccSampling;
-import org.opentripplanner.analyst.request.RenderRequest;
-import org.opentripplanner.analyst.request.SampleGridRenderer;
+import org.opentripplanner.analyst.request.*;
 import org.opentripplanner.analyst.request.SampleGridRenderer.WTWD;
-import org.opentripplanner.analyst.request.TileRequest;
 import org.opentripplanner.api.common.ParameterException;
 import org.opentripplanner.api.common.RoutingResource;
 import org.opentripplanner.api.model.TimeSurfaceShort;
@@ -24,8 +21,6 @@ import org.opentripplanner.api.parameter.Layer;
 import org.opentripplanner.api.parameter.MIMEImageFormat;
 import org.opentripplanner.api.parameter.Style;
 import org.opentripplanner.common.geometry.DelaunayIsolineBuilder;
-import org.opentripplanner.common.geometry.IsolineBuilder;
-import org.opentripplanner.common.geometry.ZSampleGrid;
 import org.opentripplanner.routing.algorithm.EarliestArrivalSearch;
 import org.opentripplanner.routing.core.RoutingRequest;
 import org.opentripplanner.routing.spt.ShortestPathTree;
@@ -40,7 +35,6 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
-import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -48,6 +42,7 @@ import javax.ws.rs.core.StreamingOutput;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -90,6 +85,7 @@ public class SurfaceResource extends RoutingResource {
                     // include only the first instance of each query parameter
                     surface.params.put(e.getKey(), e.getValue().get(0));
                 }
+                surface.renderer = new WeakReference<>(router.renderer);
                 otpServer.surfaceCache.add(surface);
                 return Response.ok().entity(new TimeSurfaceShort(surface)).build(); // .created(URI)
             } else {
@@ -132,10 +128,10 @@ public class SurfaceResource extends RoutingResource {
 
         SampleSet samples = pset.getOrCreateSampleSet(router.graph);
 
-        final ResultSet indicator = new ResultSet(samples, surf, detail, detail);
+        final ResultSet indicator = new ResultSet(samples, surf, detail);
         if (indicator == null) return badServer("Could not compute indicator as requested.");
 
-        return Response.ok().entity((StreamingOutput) output -> indicator.writeJson(output)).build();
+        return Response.ok().entity((StreamingOutput) output -> indicator.writeJson(output, pset)).build();
 
     }
 
@@ -178,9 +174,12 @@ public class SurfaceResource extends RoutingResource {
         MIMEImageFormat imageFormat = new MIMEImageFormat("image/png");
         RenderRequest renderRequest =
                 new RenderRequest(imageFormat, Layer.TRAVELTIME, Style.COLOR30, true, false);
-        // TODO why can't the renderer be static?
-        Router router = otpServer.getRouter(surfA.routerId);
-        return router.renderer.getResponse(tileRequest, surfA, null, renderRequest);
+        Renderer renderer = surfA.renderer.get();
+        if (renderer == null) {
+            renderer = otpServer.getRouter(surfA.routerId).renderer;
+            surfA.renderer = new WeakReference<>(renderer);
+        }
+        return renderer.getResponse(tileRequest, surfA, null, renderRequest);
     }
     /**
      * Renders a raster tile for showing the difference between two TimeSurfaces.
@@ -293,7 +292,7 @@ public class SurfaceResource extends RoutingResource {
         }
 
         TileRequest tileRequest = new TileRequest(bbox, width, height);
-        RenderRequest renderRequest = new RenderRequest(format, Layer.TRAVELTIME, Style.GRAY, false, false);
+        RenderRequest renderRequest = new RenderRequest(format, Layer.TRAVELTIME, Style.GRAY, false, false, true);
         return router.renderer.getResponse(tileRequest, surface, null, renderRequest);
     }
 

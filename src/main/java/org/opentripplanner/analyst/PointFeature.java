@@ -26,6 +26,8 @@ public class PointFeature implements Serializable {
     private Map<String,Integer> properties;
     private double lat;
     private double lon;
+    private String label;
+    private String description;
 
     public PointFeature(){
         // blank constructor for deserialization
@@ -36,12 +38,16 @@ public class PointFeature implements Serializable {
         this.id = id;
         this.geom = null;
         this.properties = new HashMap<String,Integer>();
+        this.label = "";
+        this.description = "";
     }
 
     public PointFeature(String id, Geometry g,  HashMap<String,Integer> ad) throws EmptyPolygonException, UnsupportedGeometryException{
         this.id = id;
         this.setGeom(g);
         this.properties = ad;
+        this.label = "";
+        this.description = "";
     }
 
     public void addAttribute( String id, Integer val ){
@@ -90,6 +96,14 @@ public class PointFeature implements Serializable {
         return id;
     }
 
+    public String getLabel() {
+        return label;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
     @SuppressWarnings("unchecked")
     public static PointFeature fromJsonNode(JsonNode feature) throws EmptyPolygonException,
             UnsupportedGeometryException {
@@ -101,6 +115,16 @@ public class PointFeature implements Serializable {
         }
         PointFeature ret = new PointFeature(geoJsonFeature.getId());
         ret.setGeom(GeometryUtils.convertGeoJsonToJtsGeometry(geoJsonFeature.getGeometry()));
+
+        String label = geoJsonFeature.getProperty("label");
+        String description = geoJsonFeature.getProperty("description");
+        if (label == null)
+            label = "";
+        if (description == null)
+            description = "";
+        ret.label = label;
+        ret.description = description;
+
         Object structured = geoJsonFeature.getProperty("structured");
         if (structured == null || !(structured instanceof Map))
             return null;
@@ -115,6 +139,14 @@ public class PointFeature implements Serializable {
 
     public void setId(String id) {
         this.id = id;
+    }
+
+    public void setLabel(String label) {
+        this.label = label;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
     }
 
     public double getLat() {

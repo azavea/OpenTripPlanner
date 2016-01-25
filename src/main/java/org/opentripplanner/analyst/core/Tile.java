@@ -269,27 +269,23 @@ public abstract class Tile {
     final byte UNREACHABLE = Byte.MIN_VALUE;
 
     public BufferedImage generateImage(TimeSurface surf, RenderRequest renderRequest) {
-        long t0 = System.currentTimeMillis();
         BufferedImage image = getEmptyImage(renderRequest.style);
         byte[] imagePixelData = ((DataBufferByte)image.getRaster().getDataBuffer()).getData();
         int i = 0;
-        for (Sample s : getSamples()) {
+        Sample[] samples = getSamples();
+        for (Sample s : samples) {
             byte pixel;
             if (s != null) {
-                if (renderRequest.style == Style.BOARDINGS) {
-                    pixel = 0; // FIXME s.evalBoardings(surf);
-                } else {
-                    long t = s.eval(surf); // renderRequest.style
-                    if (t == Long.MAX_VALUE)
-                        pixel = UNREACHABLE;
-                    else {
-                        t /= 60;
-                        if (t < -120)
-                            t = -120;
-                        else if (t > 120)
-                            t = 120;
-                        pixel = (byte) t;
-                    }
+                long t = s.eval(surf); // renderRequest.style
+                if (t == Long.MAX_VALUE)
+                    pixel = UNREACHABLE;
+                else {
+                    t /= 60;
+                    if (t < -120)
+                        t = -120;
+                    else if (t > 120)
+                        t = 120;
+                    pixel = (byte) t;
                 }
             } else {
                 pixel = UNREACHABLE;
@@ -297,8 +293,6 @@ public abstract class Tile {
             imagePixelData[i] = pixel;
             i++;
         }
-        long t1 = System.currentTimeMillis();
-        LOG.debug("filled in tile image from SPT in {}msec", t1 - t0);
         return image;
     }
 
@@ -306,11 +300,11 @@ public abstract class Tile {
             double k1, TimeSurface surfA,
             double k2, TimeSurface surfB,
             double intercept, RenderRequest renderRequest) {
-        long t0 = System.currentTimeMillis();
         BufferedImage image = getEmptyImage(renderRequest.style);
         byte[] imagePixelData = ((DataBufferByte)image.getRaster().getDataBuffer()).getData();
         int i = 0;
-        for (Sample s : getSamples()) {
+        Sample[] samples = getSamples();
+        for (Sample s : samples) {
             byte pixel = UNREACHABLE;
             if (s != null) {
                 long t1 = s.eval(surfA);
@@ -327,8 +321,6 @@ public abstract class Tile {
             imagePixelData[i] = pixel;
             i++;
         }
-        long t1 = System.currentTimeMillis();
-        LOG.debug("filled in tile image from SPT in {}msec", t1 - t0);
         return image;
     }
 

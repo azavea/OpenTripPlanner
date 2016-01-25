@@ -24,14 +24,20 @@ public class RenderRequest {
     public final Style style; 
     public final boolean transparent;
     public final boolean timestamp;
-    
+    public final boolean getGeotiff;
+
+    public RenderRequest (MIMEImageFormat format,
+                          Layer layer, Style style, boolean transparent, boolean timestamp) {
+        this(format, layer, style, transparent, timestamp, false);
+    }
     public RenderRequest (MIMEImageFormat format, 
-        Layer layer, Style style, boolean transparent, boolean timestamp) {
+        Layer layer, Style style, boolean transparent, boolean timestamp, boolean getGeotiff) {
         this.format = format;
         this.layer = layer;
         this.style = style;
         this.transparent = transparent;
         this.timestamp = timestamp;
+        this.getGeotiff = getGeotiff;
     }
     
     public String toString() {
