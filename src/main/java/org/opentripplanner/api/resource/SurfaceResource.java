@@ -131,10 +131,10 @@ public class SurfaceResource extends RoutingResource {
 
         SampleSet samples = pset.getOrCreateSampleSet(router.graph);
 
-        final ResultSet indicator = new ResultSet(samples, surf, detail, detail);
+        final ResultSet indicator = new ResultSet(samples, surf, detail);
         if (indicator == null) return badServer("Could not compute indicator as requested.");
 
-        return Response.ok().entity((StreamingOutput) output -> indicator.writeJson(output)).build();
+        return Response.ok().entity((StreamingOutput) output -> indicator.writeJson(output, pset)).build();
 
     }
 

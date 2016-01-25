@@ -59,11 +59,11 @@ public class ResultSet implements Serializable{
 
     /** Build a new ResultSet by evaluating the given TimeSurface at all the given sample points, not including times. */
     public ResultSet(SampleSet samples, TimeSurface surface){
-        this(samples, surface, false, false);
+        this(samples, surface, false);
     }
     
     /** Build a new ResultSet by evaluating the given TimeSurface at all the given sample points, optionally including times. */
-    public ResultSet(SampleSet samples, TimeSurface surface, boolean includeTimes, boolean includeIsochrones){
+    public ResultSet(SampleSet samples, TimeSurface surface, boolean includeIsochrones){
         id = samples.pset.id + "_" + surface.id;
 
         PointSet targets = samples.pset;
@@ -74,8 +74,7 @@ public class ResultSet implements Serializable{
 
         buildHistograms(times, targets);
 
-        if (includeTimes)
-            this.times = times;
+        this.times = times;
         
         if (includeIsochrones)
             buildIsochrones(surface);
@@ -105,8 +104,7 @@ public class ResultSet implements Serializable{
     
     /** Build a new ResultSet directly from times at point features, optionally including histograms or interpolating isochrones */
     public ResultSet(int[] times, PointSet targets, boolean includeTimes, boolean includeHistograms, boolean includeIsochrones) {
-        if (includeTimes)
-            this.times = times;
+        this.times = times;
 
         if (includeHistograms) {
             buildHistograms(times, targets);
@@ -163,14 +161,6 @@ public class ResultSet implements Serializable{
         return value;
     }
 
-    /**
-     * Serialize this ResultSet to the given output stream as a JSON document, when the pointset is not available.
-     * TODO: explain why and when that would happen 
-     */
-    public void writeJson(OutputStream output) {
-        writeJson(output, null);
-    }
-
     /** 
      * Serialize this ResultSet to the given output stream as a JSON document.
      * properties: a list of the names of all the pointSet properties for which we have histograms.
@@ -196,6 +186,17 @@ public class ResultSet implements Serializable{
                     ps.writeJsonProperties(jgen);
                 }
 
+                // write travel times as map of object id -> travel time in seconds
+                if (times != null) {
+                    jgen.writeObjectFieldStart("times");
+                    {
+                        for (int i = 0; i < ps.ids.length; i++) {
+                            jgen.writeNumberField(ps.ids[i], times[i]);
+                        }
+                    }
+                    jgen.writeEndObject();
+                }
+
                 jgen.writeObjectFieldStart("data"); {
                     for(String propertyId : histograms.keySet()) {
 
@@ -212,6 +213,7 @@ public class ResultSet implements Serializable{
 
             jgen.close();
         } catch (IOException ioex) {
+            LOG.info(ioex.getMessage());
             LOG.info("IOException, connection may have been closed while streaming JSON.");
         }
     }
