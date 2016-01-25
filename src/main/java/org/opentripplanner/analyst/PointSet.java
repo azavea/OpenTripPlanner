@@ -109,6 +109,10 @@ public class PointSet implements Serializable {
     /** A unique identifier for each feature. */
     protected String[] ids;
 
+    // meta info
+    protected String[] labels;
+    protected String[] descriptions;
+
     /** The latitude of each feature (or its centroid if it's not a point). */
     protected double[] lats;
 
@@ -149,6 +153,8 @@ public class PointSet implements Serializable {
         int latCol = -1;
         int lonCol = -1;
         int idCol = -1;
+        int labelCol = -1;
+        int descCol = -1;
 
         // An array of property magnitudes corresponding to each column in the input. 
         // Some of these will remain null (specifically, the lat and lon columns which do not contain magnitudes)
@@ -161,6 +167,10 @@ public class PointSet implements Serializable {
                 lonCol = c;
             } else if (header.equalsIgnoreCase("id") || header.equalsIgnoreCase("geoid")) {
                 idCol = c;
+            } else if (header.equalsIgnoreCase("label")) {
+                labelCol = c;
+            } else if (header.equalsIgnoreCase("description")) {
+                descCol = c;
             } else {
                 ret.getOrCreatePropertyForId(header);
                 properties[c] = ret.properties.get(header);
@@ -172,10 +182,13 @@ public class PointSet implements Serializable {
         }
         ret.lats = new double[nRecs];
         ret.lons = new double[nRecs];
+        ret.labels = new String[nRecs];
+        ret.descriptions = new String[nRecs];
+        int ct = 0;
         while (reader.readRecord()) {
             int rec = (int) reader.getCurrentRecord();
             for (int c = 0; c < nCols; c++) {
-                if (c == latCol || c == lonCol || c == idCol) {
+                if (c == latCol || c == lonCol || c == idCol || c == labelCol || c == descCol) {
                     continue;
                 }
 
@@ -185,16 +198,33 @@ public class PointSet implements Serializable {
             }
             ret.lats[rec] = Double.parseDouble(reader.get(latCol));
             ret.lons[rec] = Double.parseDouble(reader.get(lonCol));
+
+            if (idCol >= 0) {
+                ret.ids[rec] = reader.get(idCol);
+            } else {
+                // assign an ID if it doesn't have one
+                ret.ids[rec] = String.valueOf(ct);
+            }
+
+            if (labelCol >= 0) {
+                ret.labels[rec] = reader.get(labelCol);
+            } else {
+                ret.labels[rec] = "";
+            }
+
+            if (descCol >= 0) {
+                ret.descriptions[rec] = reader.get(descCol);
+            } else {
+                ret.descriptions[rec] = "";
+            }
+
+            ct++;
         }
         ret.capacity = nRecs;
         return ret;
     }
-
-    public static PointSet fromShapefile(File file) throws NoSuchAuthorityCodeException, IOException, FactoryException, EmptyPolygonException, UnsupportedGeometryException {
-    	return fromShapefile(file, null, null);
-    }
     
-    public static PointSet fromShapefile(File file, String originIDField, List<String> propertyFields) throws IOException, NoSuchAuthorityCodeException, FactoryException, EmptyPolygonException, UnsupportedGeometryException {
+    public static PointSet fromShapefile(File file) throws IOException, NoSuchAuthorityCodeException, FactoryException, EmptyPolygonException, UnsupportedGeometryException {
         if ( ! file.exists())
             throw new RuntimeException("Shapefile does not exist.");
 
@@ -213,16 +243,24 @@ public class PointSet implements Serializable {
         // This assumes that all features have the same set of properties, which I think is always the case for shapefiles
         SimpleFeatureIterator it = featureCollection.features();
         SimpleFeature protoFt = it.next();
-        if (propertyFields == null) {
-        	propertyFields = new ArrayList<String>();
-        	// No property fields specified, so use all property fields
-        	for (Property p : protoFt.getProperties()) {
-        		propertyFields.add(p.getName().toString());
-        	}
-        	// If ID field is specified, don't use it as a property
-        	if (originIDField != null && propertyFields.contains(originIDField)) {
-        		propertyFields.remove(originIDField);
-        	}
+        List<String> propertyFields = new ArrayList<>();
+        String idField = "";
+        String labelField = "";
+        String descriptionField = "";
+
+        long ct = 0;
+        // No property fields specified, so use all property fields
+        for (Property p : protoFt.getProperties()) {
+            String fieldName = p.getName().toString();
+            if (fieldName.equalsIgnoreCase("id") || fieldName.equalsIgnoreCase("geoid")) {
+                idField = fieldName;
+            } else if (fieldName.equalsIgnoreCase("label")) {
+                labelField = fieldName;
+            } else if (fieldName.equalsIgnoreCase("description")) {
+                descriptionField = fieldName;
+            } else {
+                propertyFields.add(fieldName);
+            }
         }
         
         // Reset iterator
@@ -238,10 +276,22 @@ public class PointSet implements Serializable {
             ft.setGeom(geom);
             
             // Set feature's ID to the specified ID field, or to index if none is specified
-            if (originIDField == null) {
+            if (idField.isEmpty()) {
             	ft.setId(Integer.toString(i));
             } else {
-            	ft.setId(feature.getProperty(originIDField).getValue().toString());
+            	ft.setId(feature.getProperty(idField).getValue().toString());
+            }
+
+            if (labelField.isEmpty()) {
+                ft.setLabel("");
+            } else {
+                ft.setLabel(feature.getProperty(idField).getValue().toString());
+            }
+
+            if (descriptionField.isEmpty()) {
+                ft.setDescription("");
+            } else {
+                ft.setDescription(feature.getProperty(idField).getValue().toString());
             }
             
             for(Property prop : feature.getProperties() ){
@@ -460,6 +510,8 @@ public class PointSet implements Serializable {
         lats = new double[capacity];
         lons = new double[capacity];
         polygons = new Polygon[capacity];
+        labels = new String[capacity];
+        descriptions = new String[capacity];
     }
 
     /**
@@ -532,6 +584,8 @@ public class PointSet implements Serializable {
         lons[index] = feat.getLon();
 
         ids[index] = feat.getId();
+        labels[index] = feat.getLabel();
+        descriptions[index] = feat.getDescription();
 
         for (Entry<String,Integer> ad : feat.getProperties().entrySet()) {
             String propId = ad.getKey();
@@ -560,6 +614,8 @@ public class PointSet implements Serializable {
         // to have a lat/lon coordinate, we defer to it as more authoritative.
         ret.setLat(lats[index]);
         ret.setLon(lons[index]);
+        ret.setLabel(labels[index]);
+        ret.setDescription(descriptions[index]);
 
         for (Entry<String, int[]> property : this.properties.entrySet()) {
             ret.addAttribute( property.getKey(), property.getValue()[index]);
@@ -727,6 +783,8 @@ public class PointSet implements Serializable {
             }
             jgen.writeObjectFieldStart("properties");
             {
+                jgen.writeStringField("label", labels[i]);
+                jgen.writeStringField("description", descriptions[i]);
                 writeStructured(i, jgen);
             }
             jgen.writeEndObject();
