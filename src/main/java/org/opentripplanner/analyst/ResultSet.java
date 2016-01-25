@@ -191,7 +191,11 @@ public class ResultSet implements Serializable{
                     jgen.writeObjectFieldStart("times");
                     {
                         for (int i = 0; i < ps.ids.length; i++) {
-                            jgen.writeNumberField(ps.ids[i], times[i]);
+                            int time = times[i];
+                            if (time == Integer.MAX_VALUE) {
+                                time = -1; // unreachable
+                            }
+                            jgen.writeNumberField(ps.ids[i], time);
                         }
                     }
                     jgen.writeEndObject();

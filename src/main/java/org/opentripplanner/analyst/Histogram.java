@@ -107,7 +107,7 @@ public class Histogram implements Serializable {
                     continue;
 
                 // travel time to point is outside cutoff range
-                if (times[fidx] > seconds)
+                if (times[fidx] >= seconds)
                     continue;
 
                 binnedCounts[times[fidx]] += 1;
