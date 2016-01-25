@@ -47,6 +47,8 @@ public class Histogram implements Serializable {
      */
     public int[] sums;
 
+    public float[] averages;
+
     /**
      * Given parallel arrays of travel times and magnitudes for any number of destination features, construct 
      * histograms that represent the distribution of individual features and total opportunities as a function of
@@ -119,24 +121,47 @@ public class Histogram implements Serializable {
 
             // take the counts binned by seconds and convert to the total count accessible, per minute
             int counts[] = new int[cutoffMinutes];
-            int total = 0;
+
+            int totalCount = 0;
             int minute = 0;
             for (int i = 0; i < seconds; i++) {
-                total += binnedCounts[i];
+                totalCount += binnedCounts[i];
+
                 if (i % 60 == 59) {
-                    counts[minute++] = total;
+                    counts[minute] = totalCount;
+                    minute++;
                 }
             }
 
             // make the histograms
             // counts are the same for all histograms
-
             Map<String, Histogram> ret = new HashMap<>();
-
             for (Map.Entry<String, int[]> e : binnedProperties.entrySet()) {
+                // calculate sums and averages, binned in minute intervals
+                int values[] = e.getValue();
+
+                int sums[] = new int[cutoffMinutes];
+                float averages[] = new float[cutoffMinutes];
+                int totalSum = 0;
+                minute = 0;
+                for (int i = 0; i < seconds; i++) {
+                    totalSum += values[i];
+                    if (i % 60 == 59) {
+                        sums[minute] = totalSum;
+                        if (counts[minute] > 0) {
+                            averages[minute] = (float) totalSum / counts[minute];
+                        } else {
+                            averages[minute] = 0;
+                        }
+                        minute++;
+                    }
+                }
+
                 Histogram h = new Histogram();
                 h.counts = counts;
-                h.sums = weightingFunction.apply(e.getValue());
+                h.sums = sums;
+                h.averages = averages;
+
                 ret.put(e.getKey(), h);
             }
 
@@ -166,6 +191,13 @@ public class Histogram implements Serializable {
         jgen.writeArrayFieldStart("counts"); {
             for(int count : counts) {
                 jgen.writeNumber(count);
+            }
+        }
+        jgen.writeEndArray();
+        // The average of the features' magnitudes reached during each minute
+        jgen.writeArrayFieldStart("averages"); {
+            for (float avg : averages) {
+                jgen.writeNumber(avg);
             }
         }
         jgen.writeEndArray();
